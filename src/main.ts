@@ -16,6 +16,10 @@ type OpenFilePayload = {
 const markdownHostEl = document.querySelector<HTMLElement>("#markdown-host");
 const emptyStateEl = document.querySelector<HTMLElement>("#empty-state");
 
+function isAndroidRuntime(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
 function normalizePathFromFileUrl(value: string): string | null {
   try {
     const url = new URL(value);
@@ -155,6 +159,21 @@ async function openMarkdown(path: string) {
   }
 }
 
+async function consumeExternalLaunchPath(): Promise<string | null> {
+  try {
+    return await invoke<string | null>("consume_external_launch_path");
+  } catch {
+    return null;
+  }
+}
+
+async function pollExternalLaunchPath() {
+  const path = await consumeExternalLaunchPath();
+  if (path) {
+    await openMarkdown(path);
+  }
+}
+
 function attachMarkdownLinkListener() {
   markdownHostEl?.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
@@ -198,7 +217,19 @@ async function boot() {
   if (launchPath) {
     await openMarkdown(launchPath);
   } else {
-    showMessage("Open a .md file from Finder to view it.");
+    showMessage("Open a .md file to view it.");
+  }
+
+  if (isAndroidRuntime()) {
+    void pollExternalLaunchPath();
+    window.setInterval(() => {
+      void pollExternalLaunchPath();
+    }, 1200);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        void pollExternalLaunchPath();
+      }
+    });
   }
 }
 

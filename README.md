@@ -59,6 +59,24 @@ APK output:
 
 - `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk`
 
+## E2E regression (Android)
+
+Covers:
+
+- install debug APK
+- launch app with Android `VIEW` intent on `.md` file
+- verify open path is consumed by app
+- capture screenshot + logs + JSON report
+
+```bash
+source "$HOME/.cargo/env"
+npm run test:e2e:android
+```
+
+Artifacts are written to:
+
+- `artifacts/e2e-android/<timestamp>/`
+
 ## E2E regression (macOS)
 
 Covers:
@@ -80,5 +98,6 @@ Artifacts are written to:
 ## Notes
 
 - Finder file association remains enabled for `.md/.markdown/.mdown/.mkd`.
+- Android supports `VIEW` and `SEND` intent for markdown/text MIME types.
 - WebDriver plugin is only enabled for debug builds with feature `webdriver`.
 - Android Gradle repositories include Aliyun mirrors to avoid TLS handshake failures to `dl.google.com` in restricted networks.

@@ -26,10 +26,54 @@ fn get_launch_path(state: State<'_, ViewerState>) -> Option<String> {
     lock.take().map(|path| path.to_string_lossy().to_string())
 }
 
+fn external_launch_marker_path(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let cache_dir = app.path().cache_dir().ok()?;
+    Some(cache_dir.join("external_launch_path.txt"))
+}
+
+fn consume_external_launch_path_impl(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let marker_path = external_launch_marker_path(app)?;
+    let raw = std::fs::read_to_string(&marker_path).ok()?;
+    let _ = std::fs::remove_file(&marker_path);
+
+    let candidate = raw.trim();
+    if candidate.is_empty() {
+        return None;
+    }
+
+    let normalized = normalize_input_path(candidate).ok()?;
+    if core::is_markdown_path(&normalized) && normalized.exists() {
+        Some(normalized)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+fn consume_external_launch_path(app: tauri::AppHandle) -> Option<String> {
+    consume_external_launch_path_impl(&app).map(|path| path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 fn open_markdown(path: String) -> Result<RenderedMarkdown, String> {
-    let normalized = normalize_input_path(&path)?;
-    render_markdown_file(&normalized)
+    let normalized = match normalize_input_path(&path) {
+        Ok(value) => value,
+        Err(err) => {
+            eprintln!("MD_VIEWER_OPEN_ERR {} :: {}", path, err);
+            return Err(err);
+        }
+    };
+
+    match render_markdown_file(&normalized) {
+        Ok(doc) => {
+            println!("MD_VIEWER_OPEN_OK {}", normalized.to_string_lossy());
+            Ok(doc)
+        }
+        Err(err) => {
+            eprintln!("MD_VIEWER_OPEN_ERR {} :: {}", normalized.to_string_lossy(), err);
+            Err(err)
+        }
+    }
 }
 
 #[cfg(not(target_os = "android"))]
@@ -111,6 +155,9 @@ pub fn run() {
             if let Some(path) = pick_markdown_from_args(&args, None) {
                 let state = app.state::<ViewerState>();
                 set_launch_path(&state, path);
+            } else if let Some(path) = consume_external_launch_path_impl(&app.handle()) {
+                let state = app.state::<ViewerState>();
+                set_launch_path(&state, path);
             }
 
             Ok(())
@@ -127,7 +174,11 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_webdriver::init());
 
     let app = builder
-        .invoke_handler(tauri::generate_handler![get_launch_path, open_markdown])
+        .invoke_handler(tauri::generate_handler![
+            get_launch_path,
+            consume_external_launch_path,
+            open_markdown
+        ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 

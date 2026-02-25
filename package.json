@@ -15,6 +15,7 @@
     "android:init": "tauri android init --ci",
     "android:build:apk:debug": "tauri android build --apk --debug -t aarch64 --ci",
     "android:build:apk:release": "tauri android build --apk -t aarch64 --ci",
+    "test:e2e:android": "npm run android:build:apk:debug && node ./scripts/e2e-android-regression.mjs",
     "test:e2e:mac": "npm run tauri:build:debug:webdriver && node ./scripts/e2e-macos-regression.mjs",
     "mac:release:notarized": "bash ./scripts/release-macos-notarized.sh",
     "mac:install-app": "bash ./scripts/install-mac-app.sh",
