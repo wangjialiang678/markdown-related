@@ -26,27 +26,45 @@ fn get_launch_path(state: State<'_, ViewerState>) -> Option<String> {
     lock.take().map(|path| path.to_string_lossy().to_string())
 }
 
-fn external_launch_marker_path(app: &tauri::AppHandle) -> Option<PathBuf> {
-    let cache_dir = app.path().cache_dir().ok()?;
-    Some(cache_dir.join("external_launch_path.txt"))
+fn external_launch_marker_paths(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+
+    if let Ok(cache_dir) = app.path().cache_dir() {
+        paths.push(cache_dir.join("external_launch_path.txt"));
+    }
+
+    let temp_marker = std::env::temp_dir().join("external_launch_path.txt");
+    if !paths.iter().any(|path| path == &temp_marker) {
+        paths.push(temp_marker);
+    }
+
+    paths
 }
 
 fn consume_external_launch_path_impl(app: &tauri::AppHandle) -> Option<PathBuf> {
-    let marker_path = external_launch_marker_path(app)?;
-    let raw = std::fs::read_to_string(&marker_path).ok()?;
-    let _ = std::fs::remove_file(&marker_path);
+    for marker_path in external_launch_marker_paths(app) {
+        let raw = match std::fs::read_to_string(&marker_path) {
+            Ok(value) => value,
+            Err(_) => continue,
+        };
+        let _ = std::fs::remove_file(&marker_path);
 
-    let candidate = raw.trim();
-    if candidate.is_empty() {
-        return None;
+        let candidate = raw.trim();
+        if candidate.is_empty() {
+            continue;
+        }
+
+        let normalized = match normalize_input_path(candidate) {
+            Ok(path) => path,
+            Err(_) => continue,
+        };
+
+        if core::is_markdown_path(&normalized) && normalized.exists() {
+            return Some(normalized);
+        }
     }
 
-    let normalized = normalize_input_path(candidate).ok()?;
-    if core::is_markdown_path(&normalized) && normalized.exists() {
-        Some(normalized)
-    } else {
-        None
-    }
+    None
 }
 
 #[tauri::command]
@@ -74,6 +92,11 @@ fn open_markdown(path: String) -> Result<RenderedMarkdown, String> {
             Err(err)
         }
     }
+}
+
+#[tauri::command]
+fn render_markdown_text(file_name: String, raw_markdown: String) -> RenderedMarkdown {
+    core::render_markdown_text(file_name, raw_markdown)
 }
 
 #[cfg(not(target_os = "android"))]
@@ -177,7 +200,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_launch_path,
             consume_external_launch_path,
-            open_markdown
+            open_markdown,
+            render_markdown_text
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

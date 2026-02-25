@@ -15,9 +15,14 @@ type OpenFilePayload = {
 
 const markdownHostEl = document.querySelector<HTMLElement>("#markdown-host");
 const emptyStateEl = document.querySelector<HTMLElement>("#empty-state");
+const openFileButtonEl = document.querySelector<HTMLButtonElement>("#open-file-button");
+const openFileInputEl = document.querySelector<HTMLInputElement>("#open-file-input");
 
-function isAndroidRuntime(): boolean {
-  return /Android/i.test(navigator.userAgent);
+function isMobileRuntime(): boolean {
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    return true;
+  }
+  return navigator.maxTouchPoints > 0 && window.innerWidth <= 900;
 }
 
 function normalizePathFromFileUrl(value: string): string | null {
@@ -46,6 +51,10 @@ function normalizeDroppedPath(path: string): string | null {
 
 function isMarkdownPath(path: string): boolean {
   return /\.(md|markdown|mdown|mkd)$/i.test(path);
+}
+
+function isMarkdownFileName(name: string): boolean {
+  return /\.(md|markdown|mdown|mkd)$/i.test(name);
 }
 
 function resolveLocalPath(baseDir: string, rawTarget: string): string | null {
@@ -159,10 +168,50 @@ async function openMarkdown(path: string) {
   }
 }
 
+async function openMarkdownFromLocalFile(file: File) {
+  const fileName = file.name || "untitled.md";
+  if (!isMarkdownFileName(fileName)) {
+    showMessage("Only Markdown files are supported (.md/.markdown/.mdown/.mkd).");
+    return;
+  }
+
+  try {
+    const rawMarkdown = await file.text();
+    const doc = await invoke<RenderedMarkdown>("render_markdown_text", {
+      fileName,
+      rawMarkdown,
+    });
+    renderDocument(doc);
+  } catch (error) {
+    showMessage(`Open failed: ${String(error)}`);
+  }
+}
+
+function setupMobileOpenEntry() {
+  if (!isMobileRuntime() || !openFileButtonEl || !openFileInputEl) {
+    return;
+  }
+
+  openFileButtonEl.classList.remove("hidden");
+
+  openFileButtonEl.addEventListener("click", () => {
+    openFileInputEl.click();
+  });
+
+  openFileInputEl.addEventListener("change", () => {
+    const [file] = Array.from(openFileInputEl.files || []);
+    if (file) {
+      void openMarkdownFromLocalFile(file);
+    }
+    openFileInputEl.value = "";
+  });
+}
+
 async function consumeExternalLaunchPath(): Promise<string | null> {
   try {
     return await invoke<string | null>("consume_external_launch_path");
-  } catch {
+  } catch (error) {
+    console.warn("consume_external_launch_path failed", error);
     return null;
   }
 }
@@ -193,6 +242,7 @@ function attachMarkdownLinkListener() {
 }
 
 async function boot() {
+  setupMobileOpenEntry();
   attachMarkdownLinkListener();
 
   await getCurrentWindow().onDragDropEvent((event) => {
@@ -217,20 +267,18 @@ async function boot() {
   if (launchPath) {
     await openMarkdown(launchPath);
   } else {
-    showMessage("Open a .md file to view it.");
+    showMessage(isMobileRuntime() ? "Tap Open to choose a Markdown file." : "Open a .md file to view it.");
   }
 
-  if (isAndroidRuntime()) {
+  void pollExternalLaunchPath();
+  window.setInterval(() => {
     void pollExternalLaunchPath();
-    window.setInterval(() => {
+  }, 1200);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
       void pollExternalLaunchPath();
-    }, 1200);
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        void pollExternalLaunchPath();
-      }
-    });
-  }
+    }
+  });
 }
 
 void boot();

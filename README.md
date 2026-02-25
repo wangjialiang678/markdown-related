@@ -1,6 +1,6 @@
 # Markdown Related (Minimal Viewer)
 
-Current version: `0.3.1`
+Current version: `0.3.2`
 
 This branch is a minimal Markdown viewer:
 

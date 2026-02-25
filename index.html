@@ -9,8 +9,15 @@
   </head>
   <body>
     <main id="viewer" class="viewer">
-      <p id="empty-state" class="empty-state">Open a .md file from Finder to view it.</p>
+      <p id="empty-state" class="empty-state">Open a .md file to view it.</p>
       <div id="markdown-host" class="markdown-host hidden"></div>
+      <button id="open-file-button" class="open-file-button hidden" type="button">Open</button>
+      <input
+        id="open-file-input"
+        class="open-file-input"
+        type="file"
+        accept=".md,.markdown,.mdown,.mkd,text/markdown,text/x-markdown,text/plain"
+      />
     </main>
   </body>
 </html>

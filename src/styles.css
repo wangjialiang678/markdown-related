@@ -19,6 +19,7 @@ body {
 .viewer {
   min-height: 100vh;
   padding: 28px 20px 40px;
+  position: relative;
 }
 
 .empty-state {
@@ -34,6 +35,24 @@ body {
 .markdown-host {
   max-width: 860px;
   margin: 0 auto;
+}
+
+.open-file-button {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #1f2a37;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1;
+  padding: 12px 16px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.24);
+}
+
+.open-file-input {
+  display: none;
 }
 
 .markdown-body {

@@ -104,6 +104,20 @@ pub fn render_markdown_file(path: &Path) -> Result<RenderedMarkdown, String> {
     })
 }
 
+pub fn render_markdown_text(file_name: String, raw_markdown: String) -> RenderedMarkdown {
+    let (html, headings) = markdown_to_html_with_toc(&raw_markdown);
+
+    RenderedMarkdown {
+        path: format!("virtual://{file_name}"),
+        file_name,
+        base_dir: String::new(),
+        raw_markdown,
+        html,
+        headings,
+        modified_unix_ms: 0,
+    }
+}
+
 fn markdown_to_html_with_toc(markdown: &str) -> (String, Vec<Heading>) {
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
