@@ -1,6 +1,6 @@
 # Markdown Related (Minimal Viewer)
 
-Current version: `0.3.2`
+Current version: `0.3.3`
 
 This branch is a minimal Markdown viewer:
 
@@ -99,5 +99,6 @@ Artifacts are written to:
 
 - Finder file association remains enabled for `.md/.markdown/.mdown/.mkd`.
 - Android supports `VIEW` and `SEND` intent for markdown/text MIME types.
+- On Android devices where another app is the default opener (e.g. WPS), clear that app's default file association first, then choose this app in "Open with".
 - WebDriver plugin is only enabled for debug builds with feature `webdriver`.
 - Android Gradle repositories include Aliyun mirrors to avoid TLS handshake failures to `dl.google.com` in restricted networks.

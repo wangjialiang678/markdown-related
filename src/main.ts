@@ -18,13 +18,6 @@ const emptyStateEl = document.querySelector<HTMLElement>("#empty-state");
 const openFileButtonEl = document.querySelector<HTMLButtonElement>("#open-file-button");
 const openFileInputEl = document.querySelector<HTMLInputElement>("#open-file-input");
 
-function isMobileRuntime(): boolean {
-  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    return true;
-  }
-  return navigator.maxTouchPoints > 0 && window.innerWidth <= 900;
-}
-
 function normalizePathFromFileUrl(value: string): string | null {
   try {
     const url = new URL(value);
@@ -187,8 +180,8 @@ async function openMarkdownFromLocalFile(file: File) {
   }
 }
 
-function setupMobileOpenEntry() {
-  if (!isMobileRuntime() || !openFileButtonEl || !openFileInputEl) {
+function setupOpenEntry() {
+  if (!openFileButtonEl || !openFileInputEl) {
     return;
   }
 
@@ -242,7 +235,7 @@ function attachMarkdownLinkListener() {
 }
 
 async function boot() {
-  setupMobileOpenEntry();
+  setupOpenEntry();
   attachMarkdownLinkListener();
 
   await getCurrentWindow().onDragDropEvent((event) => {
@@ -267,7 +260,7 @@ async function boot() {
   if (launchPath) {
     await openMarkdown(launchPath);
   } else {
-    showMessage(isMobileRuntime() ? "Tap Open to choose a Markdown file." : "Open a .md file to view it.");
+    showMessage("Tap Open to choose a Markdown file.");
   }
 
   void pollExternalLaunchPath();

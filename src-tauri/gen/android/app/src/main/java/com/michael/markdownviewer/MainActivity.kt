@@ -43,11 +43,32 @@ class MainActivity : TauriActivity() {
     }
 
     val action = intent.action ?: return null
-    val uri = when (action) {
-      Intent.ACTION_VIEW -> intent.data
-      Intent.ACTION_SEND -> getSendStreamUri(intent)
+    return when (action) {
+      Intent.ACTION_VIEW -> resolveIncomingUri(intent.data)
+      Intent.ACTION_SEND -> {
+        val uri = getSendStreamUri(intent)
+        if (uri != null) {
+          resolveIncomingUri(uri)
+        } else {
+          cacheMarkdownText(intent.getStringExtra(Intent.EXTRA_TEXT))
+        }
+      }
+      Intent.ACTION_SEND_MULTIPLE -> {
+        val uri = getSendMultipleStreamUris(intent).firstOrNull()
+        if (uri != null) {
+          resolveIncomingUri(uri)
+        } else {
+          cacheMarkdownText(intent.getStringExtra(Intent.EXTRA_TEXT))
+        }
+      }
       else -> null
-    } ?: return null
+    }
+  }
+
+  private fun resolveIncomingUri(uri: Uri?): File? {
+    if (uri == null) {
+      return null
+    }
 
     return when (uri.scheme?.lowercase(Locale.ROOT)) {
       "file" -> fromFileUri(uri)
@@ -81,6 +102,24 @@ class MainActivity : TauriActivity() {
       target
     } catch (err: Exception) {
       Log.w(LOG_TAG, "Failed to cache markdown uri: $uri", err)
+      null
+    }
+  }
+
+  private fun cacheMarkdownText(rawText: String?): File? {
+    val text = rawText?.trim() ?: return null
+    if (text.isEmpty()) {
+      return null
+    }
+
+    val incomingDir = File(cacheDir, "incoming-markdown").apply { mkdirs() }
+    val target = File(incomingDir, "${System.currentTimeMillis()}-shared.md")
+
+    return try {
+      target.writeText(text, Charsets.UTF_8)
+      target
+    } catch (err: Exception) {
+      Log.w(LOG_TAG, "Failed to cache shared markdown text", err)
       null
     }
   }
@@ -120,6 +159,15 @@ class MainActivity : TauriActivity() {
       intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
     } else {
       intent.getParcelableExtra(Intent.EXTRA_STREAM)
+    }
+  }
+
+  @Suppress("DEPRECATION")
+  private fun getSendMultipleStreamUris(intent: Intent): List<Uri> {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) ?: emptyList()
+    } else {
+      intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM) ?: emptyList()
     }
   }
 

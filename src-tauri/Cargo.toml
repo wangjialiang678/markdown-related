@@ -1,6 +1,6 @@
 [package]
 name = "tauri-app"
-version = "0.3.2"
+version = "0.3.3"
 description = "A cross-platform Markdown viewer built with a reusable core"
 authors = ["michael"]
 edition = "2021"
