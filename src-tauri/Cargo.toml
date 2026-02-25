@@ -1,0 +1,28 @@
+[package]
+name = "tauri-app"
+version = "0.3.1"
+description = "A cross-platform Markdown viewer built with a reusable core"
+authors = ["michael"]
+edition = "2021"
+
+[features]
+default = []
+webdriver = ["dep:tauri-plugin-webdriver"]
+
+[lib]
+name = "tauri_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+pulldown-cmark = "0.13"
+ammonia = "4"
+regex = "1"
+url = "2"
+tauri-plugin-webdriver = { version = "0.2", optional = true }

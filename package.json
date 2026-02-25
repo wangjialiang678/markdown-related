@@ -1,0 +1,31 @@
+{
+  "name": "markdown-related",
+  "private": true,
+  "version": "0.3.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:debug": "tauri build --debug",
+    "tauri:build:debug:webdriver": "tauri build --debug --features webdriver",
+    "android:init": "tauri android init --ci",
+    "android:build:apk:debug": "tauri android build --apk --debug -t aarch64 --ci",
+    "android:build:apk:release": "tauri android build --apk -t aarch64 --ci",
+    "test:e2e:mac": "npm run tauri:build:debug:webdriver && node ./scripts/e2e-macos-regression.mjs",
+    "mac:release:notarized": "bash ./scripts/release-macos-notarized.sh",
+    "mac:install-app": "bash ./scripts/install-mac-app.sh",
+    "mac:update": "npm run tauri:build:debug && npm run mac:install-app"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3"
+  }
+}
